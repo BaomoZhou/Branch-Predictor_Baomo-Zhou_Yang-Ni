@@ -12,9 +12,9 @@
 //
 // TODO:Student Information
 //
-const char *studentName_1 = "Yang Ni";
-const char *studentID_1   = "A53295687";
-const char *email_1       = "y1ni@eng.ucsd.edu";
+const char *studentName = "Yang Ni";
+const char *studentID   = "A53295687";
+const char *email       = "y1ni@eng.ucsd.edu";
 
 const char *studentName_2 = "Baomo Zhou";
 const char *studentID_2   = "A53311173";
@@ -52,6 +52,7 @@ uint32_t gsLow_pc;
 // global variables for tournament
 uint32_t local_mask;
 uint32_t pc_mask;
+uint32_t tnm_mask;
 uint32_t local_his;
 uint32_t global_his;
 uint32_t choice;
@@ -60,6 +61,10 @@ uint32_t *tnm_lBHT;
 uint32_t *tnm_lPHT;
 uint32_t *tnm_gPHT;
 uint32_t *tnm_selector;
+
+uint32_t local_pRes;
+uint32_t global_pRes;
+
 
 // global variables for custom BP
 
@@ -75,31 +80,37 @@ void init_predictor() {
   //
   
   switch (bpType) {
-    gshare_mask = 0;
+    case GSHARE:
+	  gshare_mask = 0;
 	  for(int bit_loc=0;bit_loc<ghistoryBits;bit_loc++){
 		  gshare_mask = 1 << bit_loc | gshare_mask;
 	  }
-
-    pc_mask = 0;
+	  
+	  gshare_history = 0; // initialize the global history to 0
+	  int size = pow(2,ghistoryBits); // the number of entries in the PHT
+	  gshare_PHT = (uint32_t*) malloc(sizeof(uint32_t) * size);
+	  for(int idx=0;idx<size;idx++){
+	    gshare_PHT[idx]=1; // initialize to weak not taken (1)
+	  }
+	  break;
+	  
+	case TOURNAMENT:
+	  global_his = 0;
+	  local_his = 0;
+	  tnm_mask = 0;
+	  for(int bit_loc=0;bit_loc<ghistoryBits;bit_loc++){
+		  tnm_mask = 1 << bit_loc | tnm_mask;
+	  }
+	  pc_mask = 0;
 	  for(int bit_loc=0;bit_loc<pcIndexBits;bit_loc++){
 		  pc_mask = 1 << bit_loc | pc_mask;
 	  }
-
-    local_mask = 0;
+      local_mask = 0;
 	  for(int bit_loc=0;bit_loc<lhistoryBits;bit_loc++){
 		  local_mask = 1 << bit_loc | local_mask;
 	  }
-
-    case GSHARE:
-      gshare_history = 0; // initialize the global history to 0
-      int size = pow(2,ghistoryBits); // the number of entries in the PHT
-      gshare_PHT = (uint32_t*) malloc(sizeof(uint32_t) * size);
-      for(int idx=0;idx<size;idx++){
-        gshare_PHT[idx]=1; // initialize to weak not taken (1)
-      }
-      break;
-	  case TOURNAMENT:
-      size = pow(2,pcIndexBits);
+	  
+	  size = pow(2,pcIndexBits);
       tnm_lBHT = (uint32_t*) malloc(sizeof(uint32_t) * size);
       for(int idx=0;idx<size;idx++){
         tnm_lBHT[idx] = 0;
@@ -120,13 +131,13 @@ void init_predictor() {
       size = pow(2,ghistoryBits);
       tnm_selector = (uint32_t*) malloc(sizeof(uint32_t) * size);
       for(int idx=0;idx<size;idx++){
-        tnm_selector[idx] = 2;
+        tnm_selector[idx] = 1;
       }
-      break;
-	  case CUSTOM:
-	    break;
-	  default:
-	    break;
+	  break;
+	case CUSTOM:
+	  break;
+	default:
+	  break;
   }
 }
 
@@ -139,26 +150,24 @@ uint8_t make_prediction(uint32_t pc){
   //TODO: Implement prediction scheme
   //
   uint32_t prediction;
-
   // Make a prediction based on the bpType
   switch (bpType) {
     case STATIC:
       return TAKEN;
     case GSHARE:
-      gsLow_pc = pc & gshare_mask; // get lower bits of the pc address
-      gsPHT_idx = gsLow_pc ^ gshare_history;
-      prediction = gshare_PHT[gsPHT_idx];
-      if ((prediction > 3) || (prediction < 0))
-        return -1;
-      else if (prediction > 1)
-        return TAKEN;
-      else
-        return NOTTAKEN;
-        
+	  gsLow_pc = pc & gshare_mask; // get lower bits of the pc address
+	  gsPHT_idx = gsLow_pc ^ gshare_history;
+	  prediction = gshare_PHT[gsPHT_idx];
+	  if ((prediction > 3) || (prediction < 0))
+		return -1;
+	  else if (prediction > 1)
+		return TAKEN;
+	  else
+		return NOTTAKEN;
+	
     case TOURNAMENT:
-      global_his = gshare_mask & gshare_history;
       pc_index = pc_mask & pc;
-      local_his = local_mask & tnm_lBHT[pc_index];
+      local_his = tnm_lBHT[pc_index];
       choice = tnm_selector[global_his];
       if(choice < 2){
         prediction = tnm_gPHT[global_his];
@@ -172,7 +181,6 @@ uint8_t make_prediction(uint32_t pc){
       else{
         return TAKEN;
       }
-	  break;
     case CUSTOM:
 	  break;
     default:
@@ -191,27 +199,33 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
   //
   //TODO: Implement Predictor training
   //
-  uint32_t local_pRes;
-  uint32_t global_pRes;
+  
   switch(bpType){
     case GSHARE:
-      if(outcome == TAKEN){
-        if(gshare_PHT[gsPHT_idx]<3)
-            gshare_PHT[gsPHT_idx]++;
-        } else {
-        if(gshare_PHT[gsPHT_idx]>0)
-            gshare_PHT[gsPHT_idx]--;
-        }
-        gshare_history = (gshare_history<<1) | outcome;
-        gshare_history &= gshare_mask;
-	  case TOURNAMENT:
-      local_pRes = tnm_lPHT[local_his];
+	  if(outcome == TAKEN){
+		if(gshare_PHT[gsPHT_idx]<3)
+	      gshare_PHT[gsPHT_idx]++;
+	  } else {
+		if(gshare_PHT[gsPHT_idx]>0)
+	      gshare_PHT[gsPHT_idx]--;
+	  }
+	  gshare_history = (gshare_history<<1) | outcome;
+	  gshare_history &= gshare_mask;
+	  break;
+	  
+	case TOURNAMENT:
+	  pc_index = pc_mask & pc;
+      local_his = tnm_lBHT[pc_index];
+      choice = tnm_selector[global_his];
+	  
+	  local_pRes = tnm_lPHT[local_his];
       if(local_pRes<2){
         local_pRes = NOTTAKEN;
       }
       else{
         local_pRes = TAKEN;
       }
+	  
       global_pRes = tnm_gPHT[global_his];
       if(global_pRes<2){
         global_pRes = NOTTAKEN;
@@ -219,12 +233,14 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
       else{
         global_pRes = TAKEN;
       }
+	  
       if(choice < 3 && local_pRes == outcome && global_pRes != outcome){
         tnm_selector[global_his]++;
       }
       else if(choice > 0 && global_pRes == outcome && local_pRes != outcome){
         tnm_selector[global_his]--;
       }
+	  
       if(outcome == TAKEN){
         if(tnm_gPHT[global_his] < 3){
           tnm_gPHT[global_his]++;
@@ -244,10 +260,9 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
       tnm_lBHT[pc_index] = (tnm_lBHT[pc_index] << 1) | outcome;
       tnm_lBHT[pc_index] &= local_mask;
       global_his = (global_his << 1 )| outcome;
-      global_his &= gshare_mask;
-
+      global_his &= tnm_mask;
 	  break;
-  case CUSTOM:
+    case CUSTOM:
 	  break;
 	default:
 	  break;
