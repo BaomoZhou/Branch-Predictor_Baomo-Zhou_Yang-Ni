@@ -65,8 +65,13 @@ uint32_t *tnm_selector;
 uint32_t local_pRes;
 uint32_t global_pRes;
 
-
 // global variables for custom BP
+uint32_t pct_int_his;
+uint32_t pct_mask;
+int** pct_weights;
+int* pct_array_his;
+float pct_output;
+
 
 //------------------------------------//
 //        Predictor Functions         //
@@ -135,6 +140,12 @@ void init_predictor() {
       }
 	  break;
 	case CUSTOM:
+	  ghistoryBits = 12;
+      pcIndexBits = 10;
+	  pct_mask = 0;
+	  for(int bit_loc=0;bit_loc<ghistoryBits;bit_loc++){
+		  pct_mask = 1 << bit_loc | pct_mask;
+	  }
 	  break;
 	default:
 	  break;
