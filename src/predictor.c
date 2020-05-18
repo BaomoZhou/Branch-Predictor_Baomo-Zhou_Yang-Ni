@@ -273,7 +273,38 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
       global_his = (global_his << 1 )| outcome;
       global_his &= tnm_mask;
 	  break;
-    case CUSTOM:
+
+    case CUSTOM: {
+      uint32_t addr_low = pc & pct_mask;
+      uint32_t his_low = pct_int_his & pct_mask; 
+      uint32_t pct_index = addr_low ^ his_low;
+      int t;
+      if(outcome == TAKEN){
+        t = 1;
+      }
+      else{
+        t = -1;
+      }
+      int upper_bound = 100;
+      int lower_bound = -upper_bound;
+      uint8_t prediction;
+      if (pct_output < 0) {
+        prediction = NOTTAKEN; //赋初始值的问题值得关注
+      }
+      else{
+        prediction = TAKEN;
+      } 
+      if(prediction != outcome || (pct_output >= lower_bound && pct_output <= upper_bound)){
+        pct_weights[pct_index][0] += 1*t;
+        for(int i = 1; i <= ghistoryBits; i++){
+          pct_weights[pct_index][i] += t*pct_array_his[i];
+        }
+      }
+      for(int i = ghistoryBits; i>0; i--){
+          pct_array_his[i] = pct_array_his[i-1];
+      }
+      pct_array_his[0] = t;
+    }
 	  break;
 	default:
 	  break;
