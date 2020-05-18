@@ -85,7 +85,6 @@ main(int argc, char *argv[])
   stream = stdin;
   bpType = STATIC;
   verbose = 0;
-
   // Process cmdline Arguments
   for (int i = 1; i < argc; ++i) {
     if (!strcmp(argv[i],"--help")) {
@@ -102,7 +101,6 @@ main(int argc, char *argv[])
       stream = fopen(argv[i], "r");
     }
   }
-
   // Initialize the predictor
   init_predictor();
 

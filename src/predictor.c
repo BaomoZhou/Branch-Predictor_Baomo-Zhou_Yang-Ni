@@ -83,7 +83,6 @@ void init_predictor() {
   //
   //TODO: Initialize Branch Predictor Data Structures
   //
-  
 switch (bpType) {
     case GSHARE:
 	{
@@ -259,7 +258,6 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
   //
   //TODO: Implement Predictor training
   //
-  
   switch(bpType){
     case GSHARE:
 	  if(outcome == TAKEN){
@@ -346,10 +344,10 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
       if(prediction != outcome || (pct_output >= lower_bound && pct_output <= upper_bound)){
         pct_weights[pct_index][0] += 1*t;
         for(int i = 1; i <= ghistoryBits; i++){
-          pct_weights[pct_index][i] += t*pct_array_his[i];
+          pct_weights[pct_index][i] += t*pct_array_his[i-1];
         }
       }
-      for(int i = ghistoryBits; i>0; i--){
+      for(int i = ghistoryBits - 1; i>0; i--){
           pct_array_his[i] = pct_array_his[i-1];
       }
       pct_array_his[0] = t;
