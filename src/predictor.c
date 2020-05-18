@@ -68,8 +68,8 @@ uint32_t global_pRes;
 // global variables for custom BP
 uint32_t pct_int_his;
 uint32_t pct_mask;
-int** pct_weights;
-int* pct_array_his;
+int **pct_weights;
+int *pct_array_his;
 float pct_output;
 
 
@@ -84,8 +84,9 @@ void init_predictor() {
   //TODO: Initialize Branch Predictor Data Structures
   //
   
-  switch (bpType) {
+switch (bpType) {
     case GSHARE:
+	{
 	  gshare_mask = 0;
 	  for(int bit_loc=0;bit_loc<ghistoryBits;bit_loc++){
 		  gshare_mask = 1 << bit_loc | gshare_mask;
@@ -98,8 +99,9 @@ void init_predictor() {
 	    gshare_PHT[idx]=1; // initialize to weak not taken (1)
 	  }
 	  break;
-	  
+	}
 	case TOURNAMENT:
+	{
 	  global_his = 0;
 	  local_his = 0;
 	  tnm_mask = 0;
@@ -139,17 +141,45 @@ void init_predictor() {
         tnm_selector[idx] = 1;
       }
 	  break;
+	}
 	case CUSTOM:
+	{
 	  ghistoryBits = 12;
       pcIndexBits = 10;
 	  pct_mask = 0;
-	  for(int bit_loc=0;bit_loc<ghistoryBits;bit_loc++){
+	  
+	  for(int bit_loc=0;bit_loc<pcIndexBits;bit_loc++){
 		  pct_mask = 1 << bit_loc | pct_mask;
 	  }
+	  int size = pow(2,pcIndexBits);
+	  pct_weights = (int**)malloc(sizeof(int*) * size);
+	  node_num = ghistoryBits + 1;
+	  for (int idx_1=0;idx_1<size;idx_1++) {
+		  pct_weights[idx_1] = (int*)malloc(sizeof(int) * node_num);
+		  for (int idx_2=0;idx_2<node_num;idx_2++) {
+			  pct_weights[idx_2] = 0;
+		  }
+	  }
+	  
+	  pct_array_his = (int*)malloc(sizeof(int) * ghistoryBits);
+	  for (int idx=0;idx<ghistoryBits;idx++) {
+		  pct_array_his[idx] = -1;
+	  }
 	  break;
+	}
 	default:
 	  break;
   }
+}
+
+void arr_to_int() {
+	pct_int_his = 0;
+	for (int idx=0;idx<ghistoryBits;idx++) {
+		pct_int_his = pct_int_his << 1;
+		if (pct_array_his[idx] == 1) {
+			pct_int_his += 1;
+		}
+	}
 }
 
 // Make a prediction for conditional branch instruction at PC 'pc'
@@ -166,6 +196,7 @@ uint8_t make_prediction(uint32_t pc){
     case STATIC:
       return TAKEN;
     case GSHARE:
+	{
 	  gsLow_pc = pc & gshare_mask; // get lower bits of the pc address
 	  gsPHT_idx = gsLow_pc ^ gshare_history;
 	  prediction = gshare_PHT[gsPHT_idx];
@@ -175,8 +206,9 @@ uint8_t make_prediction(uint32_t pc){
 		return TAKEN;
 	  else
 		return NOTTAKEN;
-	
+	}
     case TOURNAMENT:
+	{
       pc_index = pc_mask & pc;
       local_his = tnm_lBHT[pc_index];
       choice = tnm_selector[global_his];
@@ -192,8 +224,25 @@ uint8_t make_prediction(uint32_t pc){
       else{
         return TAKEN;
       }
+	}
     case CUSTOM:
+	{
+	  arr_to_int();
+	  int masked_pc = pc & pct_mask;
+	  int masked_history = pct_int_his & pct_mask;
+	  int weight_idx = masked_pc ^ masked_history;
+	  
+	  pct_output = pct_weights[weight_idx][0];
+	  for (int idx=0;idx<ghistoryBits;i++) {
+		  pct_output += pct_weights[weight_idx][idx+1] * pct_array_his[idx];
+	  }
+	  
+	  if (pct_output < 0) {
+		  return NOTTAKEN;
+	  }
+	  else return TAKEN;
 	  break;
+	}
     default:
       break;
   }
