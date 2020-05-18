@@ -233,7 +233,7 @@ uint8_t make_prediction(uint32_t pc){
 	  int weight_idx = masked_pc ^ masked_history;
 	  
 	  pct_output = pct_weights[weight_idx][0];
-	  for (int idx=0;idx<ghistoryBits;i++) {
+	  for (int idx=0;idx<ghistoryBits;idx++) {
 		  pct_output += pct_weights[weight_idx][idx+1] * pct_array_his[idx];
 	  }
 	  
