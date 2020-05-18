@@ -144,8 +144,8 @@ switch (bpType) {
 	}
 	case CUSTOM:
 	{
-	  ghistoryBits = 12;
-      pcIndexBits = 10;
+	  ghistoryBits = 10;
+      pcIndexBits = 1;
 	  pct_mask = 0;
 	  
 	  for(int bit_loc=0;bit_loc<pcIndexBits;bit_loc++){
@@ -234,6 +234,7 @@ uint8_t make_prediction(uint32_t pc){
 	  
 	  pct_output = pct_weights[weight_idx][0];
 	  for (int idx=0;idx<ghistoryBits;idx++) {
+		  //printf("The first index is: %d, the second one is: %d", weight_idx, idx);
 		  pct_output += pct_weights[weight_idx][idx+1] * pct_array_his[idx];
 	  }
 	  
@@ -343,7 +344,7 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
       else{
         prediction = TAKEN;
       } 
-      if(prediction != outcome || (pct_output >= lower_bound && pct_output <= upper_bound)){
+      if((prediction != outcome) || ((pct_output >= lower_bound) && (pct_output <= upper_bound))){
         pct_weights[pct_index][0] += 1*t;
         for(int i = 1; i <= ghistoryBits; i++){
           pct_weights[pct_index][i] += t*pct_array_his[i];
@@ -354,6 +355,7 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
       }
       pct_array_his[0] = t;
     }
+	//printf("finished training");
 	  break;
 	default:
 	  break;
