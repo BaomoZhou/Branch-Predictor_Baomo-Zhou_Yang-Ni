@@ -117,7 +117,7 @@ switch (bpType) {
 		  local_mask = 1 << bit_loc | local_mask;
 	  }
 	  
-	  size = pow(2,pcIndexBits);
+	  int size = pow(2,pcIndexBits);
       tnm_lBHT = (uint32_t*) malloc(sizeof(uint32_t) * size);
       for(int idx=0;idx<size;idx++){
         tnm_lBHT[idx] = 0;
@@ -153,7 +153,7 @@ switch (bpType) {
 	  }
 	  int size = pow(2,pcIndexBits);
 	  pct_weights = (int**)malloc(sizeof(int*) * size);
-	  node_num = ghistoryBits + 1;
+	  int node_num = ghistoryBits + 1;
 	  for (int idx_1=0;idx_1<size;idx_1++) {
 		  pct_weights[idx_1] = (int*)malloc(sizeof(int) * node_num);
 		  for (int idx_2=0;idx_2<node_num;idx_2++) {
@@ -358,6 +358,8 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
 	default:
 	  break;
   }
-  
+
+
+ 
   
 }
