@@ -334,7 +334,7 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
       else{
         t = -1;
       }
-      int upper_bound = 100;
+      int upper_bound = ceil(1.93*ghistoryBits+14);
       int lower_bound = -upper_bound;
       uint8_t prediction;
       if (pct_output < 0) {
