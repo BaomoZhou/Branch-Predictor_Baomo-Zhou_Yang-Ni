@@ -111,9 +111,7 @@ main(int argc, char *argv[])
 
   // Reach each branch from the trace
   while (read_branch(&pc, &outcome)) {
-	printf("pc:%d, outcome:%d\n",pc,outcome);
     num_branches++;
-
     // Make a prediction and compare with actual outcome
     uint8_t prediction = make_prediction(pc);
     if (prediction != outcome) {
@@ -122,10 +120,8 @@ main(int argc, char *argv[])
     if (verbose != 0) {
       printf ("%d\n", prediction);
     }
-	printf("prediction make\n");
     // Train the predictor
     train_predictor(pc, outcome);
-	printf("training finished\n");
   }
 
   // Print out the mispredict statistics
