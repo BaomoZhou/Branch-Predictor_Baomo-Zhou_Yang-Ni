@@ -91,7 +91,7 @@ switch (bpType) {
 	  for(int bit_loc=0;bit_loc<ghistoryBits;bit_loc++){
 		  gshare_mask = 1 << bit_loc | gshare_mask;
 	  }
-	  
+
 	  gshare_history = 0; // initialize the global history to 0
 	  int size = pow(2,ghistoryBits); // the number of entries in the PHT
 	  gshare_PHT = (uint32_t*) malloc(sizeof(uint32_t) * size);
@@ -116,7 +116,7 @@ switch (bpType) {
 	  for(int bit_loc=0;bit_loc<lhistoryBits;bit_loc++){
 		  local_mask = 1 << bit_loc | local_mask;
 	  }
-	  
+
 	  int size = pow(2,pcIndexBits);
       tnm_lBHT = (uint32_t*) malloc(sizeof(uint32_t) * size);
       for(int idx=0;idx<size;idx++){
@@ -147,9 +147,9 @@ switch (bpType) {
 	  ghistoryBits = 12;
       pcIndexBits = 10;
 	  pct_mask = 0;
-	  
+
 	  for(int bit_loc=0;bit_loc<pcIndexBits;bit_loc++){
-		  pct_mask = 1 << bit_loc | pct_mask;
+		  pct_mask = (1 << bit_loc) | pct_mask;
 	  }
 	  int size = pow(2,pcIndexBits);
 	  pct_weights = (int**)malloc(sizeof(int*) * size);
@@ -160,7 +160,7 @@ switch (bpType) {
 			  pct_weights[idx_1][idx_2] = 0;
 		  }
 	  }
-	  
+
 	  pct_array_his = (int*)malloc(sizeof(int) * ghistoryBits);
 	  for (int idx=0;idx<ghistoryBits;idx++) {
 		  pct_array_his[idx] = -1;
@@ -232,12 +232,12 @@ uint8_t make_prediction(uint32_t pc){
 	  int masked_pc = pc & pct_mask;
 	  int masked_history = pct_int_his & pct_mask;
 	  int weight_idx = masked_pc ^ masked_history;
-	  
 	  pct_output = pct_weights[weight_idx][0];
+
 	  for (int idx=0;idx<ghistoryBits;idx++) {
 		  pct_output += pct_weights[weight_idx][idx+1] * pct_array_his[idx];
 	  }
-	  
+
 	  if (pct_output < 0) {
 		  return NOTTAKEN;
 	  }
@@ -272,12 +272,12 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
 	  gshare_history = (gshare_history<<1) | outcome;
 	  gshare_history &= gshare_mask;
 	  break;
-	  
+
 	case TOURNAMENT:
 	  pc_index = pc_mask & pc;
       local_his = tnm_lBHT[pc_index];
       choice = tnm_selector[global_his];
-	  
+
 	  local_pRes = tnm_lPHT[local_his];
       if(local_pRes<2){
         local_pRes = NOTTAKEN;
@@ -285,7 +285,7 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
       else{
         local_pRes = TAKEN;
       }
-	  
+
       global_pRes = tnm_gPHT[global_his];
       if(global_pRes<2){
         global_pRes = NOTTAKEN;
@@ -293,14 +293,14 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
       else{
         global_pRes = TAKEN;
       }
-	  
+
       if(choice < 3 && local_pRes == outcome && global_pRes != outcome){
         tnm_selector[global_his]++;
       }
       else if(choice > 0 && global_pRes == outcome && local_pRes != outcome){
         tnm_selector[global_his]--;
       }
-	  
+
       if(outcome == TAKEN){
         if(tnm_gPHT[global_his] < 3){
           tnm_gPHT[global_his]++;
@@ -325,7 +325,7 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
 
     case CUSTOM: {
       uint32_t addr_low = pc & pct_mask;
-      uint32_t his_low = pct_int_his & pct_mask; 
+      uint32_t his_low = pct_int_his & pct_mask;
       uint32_t pct_index = addr_low ^ his_low;
       int t;
       if(outcome == TAKEN){
@@ -338,12 +338,12 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
       int lower_bound = -upper_bound;
       uint8_t prediction;
       if (pct_output < 0) {
-        prediction = NOTTAKEN; //赋初始值的问题值得关注
+        prediction = NOTTAKEN; 
       }
       else{
         prediction = TAKEN;
-      } 
-      if(prediction != outcome || (pct_output >= lower_bound && pct_output <= upper_bound)){
+      }
+      if((prediction != outcome) || ((pct_output >= lower_bound) && (pct_output <= upper_bound))){
         pct_weights[pct_index][0] += 1*t;
         for(int i = 1; i <= ghistoryBits; i++){
           pct_weights[pct_index][i] += t*pct_array_his[i-1];
@@ -360,6 +360,6 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
   }
 
 
- 
-  
+
+
 }
