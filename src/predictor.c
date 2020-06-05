@@ -72,6 +72,7 @@ int **pct_weights;
 int *pct_array_his;
 float pct_output;
 
+// docker run --rm -it -v /Users/baomozhou/Proj_Github/CSE240A/Branch-Predictor_Baomo-Zhou_Yang-Ni/:/240A prodromou87/ucsd_cse240a
 
 //------------------------------------//
 //        Predictor Functions         //
@@ -156,7 +157,7 @@ switch (bpType) {
 	  for (int idx_1=0;idx_1<size;idx_1++) {
 		  pct_weights[idx_1] = (int*)malloc(sizeof(int) * node_num);
 		  for (int idx_2=0;idx_2<node_num;idx_2++) {
-			  pct_weights[idx_2] = 0;
+			  pct_weights[idx_1][idx_2] = 0;
 		  }
 	  }
 	  
@@ -208,6 +209,7 @@ uint8_t make_prediction(uint32_t pc){
 	}
     case TOURNAMENT:
 	{
+      // local predictor
       pc_index = pc_mask & pc;
       local_his = tnm_lBHT[pc_index];
       choice = tnm_selector[global_his];
@@ -303,7 +305,7 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
         if(tnm_gPHT[global_his] < 3){
           tnm_gPHT[global_his]++;
         }
-        if(tnm_lPHT[global_his] < 3){
+        if(tnm_lPHT[local_his] < 3){
           tnm_lPHT[local_his]++;
         }
       }
@@ -311,7 +313,7 @@ void train_predictor(uint32_t pc, uint8_t outcome) {
         if(tnm_gPHT[global_his] > 0){
           tnm_gPHT[global_his]--;
         }
-        if(tnm_lPHT[global_his] > 0){
+        if(tnm_lPHT[local_his] > 0){
           tnm_lPHT[local_his]--;
         }
       }
