@@ -1301,8 +1301,8 @@ switch (bpType) {
     local_his = 0;
 
     ghistoryBits = 13;
-    lhistoryBits = 11;
-    pcIndexBits = 11;
+    lhistoryBits = 10;
+    pcIndexBits = 10;
 
 	  gshare_mask = 0;
 	  for(int bit_loc=0;bit_loc<ghistoryBits;bit_loc++){
@@ -1312,6 +1312,11 @@ switch (bpType) {
     pc_mask = 0;
 	  for(int bit_loc=0;bit_loc<pcIndexBits;bit_loc++){
 		  pc_mask = 1 << bit_loc | pc_mask;
+	  }
+
+    local_mask = 0;
+	  for(int bit_loc=0;bit_loc<lhistoryBits;bit_loc++){
+		  local_mask = 1 << bit_loc | local_mask;
 	  }
 
 	  gshare_history = 0; // initialize the global history to 0
